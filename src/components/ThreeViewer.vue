@@ -9,57 +9,92 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
 gsap.registerPlugin(ScrollTrigger);
+
 const container = ref(null);
 
 onMounted(() => {
-  let scene, camera, renderer, model;
+  let scene, camera, renderer, model, particles;
 
-  // Helper to get container size
+  // Get container size
   const getContainerSize = () => {
     const el = container.value;
     return el
       ? { width: el.clientWidth, height: el.clientHeight }
       : { width: window.innerWidth, height: window.innerHeight };
   };
-  
+
   let { width, height } = getContainerSize();
 
-  // 1. Setup scene and camera
+  // Scene & Camera
   scene = new THREE.Scene();
-  camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-  camera.position.z = 3;
-  
-  // 2. Setup renderer
+  camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 1000);
+  camera.position.z = 2.5;
+
+  // Renderer
   renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
   renderer.setSize(width, height);
   container.value.appendChild(renderer.domElement);
 
-  // 3. Add light
+  // Lighting
   const light = new THREE.DirectionalLight(0xffffff, 1);
   light.position.set(0, 1, 2);
   scene.add(light);
+  scene.position.y-=1.5
+  // Particle Background
+  // const particleCount = 8000;
+  // const particleGeometry = new THREE.BufferGeometry();
+  // const positions = [];
 
-  // 4. Load model with Draco support via CDN
+  // for (let i = 0; i < particleCount; i++) {
+  //   positions.push(
+  //     (Math.random() - 0.5) * 20,
+  //     (Math.random() - 0.5) * 20,
+  //     (Math.random() - 0.5) * 20
+  //   );
+  // }
+
+  // particleGeometry.setAttribute(
+  //   'position',
+  //   new THREE.Float32BufferAttribute(positions, 3)
+  // );
+
+  // const particleMaterial = new THREE.PointsMaterial({
+  //   color: 0xffffff,
+  //   size: 0.05,
+  //   transparent: true,
+  //   opacity: 0.5,
+  //   depthWrite: false,
+  // });
+
+  // particles = new THREE.Points(particleGeometry, particleMaterial);
+  // scene.add(particles);
+
+  // Load 3D Model
   const dracoLoader = new DRACOLoader();
   dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
 
   const loader = new GLTFLoader();
   loader.setDRACOLoader(dracoLoader);
 
-  
-
-
-
   loader.load(
-    '/model.glb', // Make sure the model is in the /public folder
+    '/model.glb',
     (gltf) => {
       model = gltf.scene;
-      model.scale.set(1, 1, 1); // Adjust scale as needed
-      // Center the model if needed
-      const box = new THREE.Box3().setFromObject(model);
-      const center = box.getCenter(new THREE.Vector3());
-      model.position.sub(center); // Center the model at origin
+      model.scale.set(1, 1, 1);
+
+      // Center the model using bounding box
+      model.traverse((child) => {
+        if (child.isMesh) {
+          child.geometry.computeBoundingBox();
+        }
+      });
+
+      const bbox = new THREE.Box3().setFromObject(model);
+      const center = bbox.getCenter(new THREE.Vector3());
+      model.position.sub(center);
+
       scene.add(model);
       setupScrollAnimation();
       animate();
@@ -70,33 +105,37 @@ onMounted(() => {
     }
   );
 
-  // 5. Animation loop
+  // Animate loop
   const animate = () => {
     requestAnimationFrame(animate);
+
+    // Animate particles
+    if (particles) {
+      particles.rotation.y += 0.0005;
+      particles.rotation.x += 0.0003;
+    }
+
     renderer.render(scene, camera);
   };
-  const setupScrollAnimation = () => {
-    // const scrollArea=document.createElement('div');
-    // scrollArea.style.height = '200vh'; // Make the scroll area taller
-    // scrollArea.style.width = '100%';  
-    // document.body.appendChild(scrollArea);
-    ScrollTrigger.create({
-  trigger: document.body, // or "#scroll-content"
-  start: "top top",
-  end: "bottom bottom",
-  scrub: true,
-  onUpdate: (self) => {
-    const progress = self.progress;
-    const angle = progress * Math.PI * 2;
-    camera.position.x = Math.sin(angle) * 3;
-    camera.position.z = Math.cos(angle) * 3;
-    camera.lookAt(0, 0, 0);
-    console.log(progress)
-  },
-});
 
+  // ScrollTrigger camera animation
+  const setupScrollAnimation = () => {
+    ScrollTrigger.create({
+      trigger: document.body,
+      start: "top top",
+      end: "bottom bottom",
+      scrub: true,
+      onUpdate: (self) => {
+        const progress = self.progress;
+        const angle = progress * Math.PI * 0.5; // Partial orbit
+        camera.position.x = Math.sin(angle) * 1.5;
+        camera.position.z = 2.5 + Math.cos(angle) * 0.5;
+        camera.lookAt(0, 0, 0);
+      },
+    });
   };
-  // 6. Handle window resize
+
+  // Handle window resize
   window.addEventListener('resize', () => {
     const { width, height } = getContainerSize();
     camera.aspect = width / height;
@@ -110,8 +149,10 @@ onMounted(() => {
 .three-container {
   width: 100vw;
   height: 100vh;
-  background: #000;
+  background: radial-gradient(circle at center, #111, #000);
   overflow: hidden;
-  position:fixed;
+  position: fixed;
+  top: 0;
+  left: 0;
 }
 </style>
