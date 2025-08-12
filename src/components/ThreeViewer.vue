@@ -43,33 +43,33 @@ onMounted(() => {
   scene.add(light);
   scene.position.y-=1.5
   // Particle Background
-  // const particleCount = 8000;
-  // const particleGeometry = new THREE.BufferGeometry();
-  // const positions = [];
+  const particleCount = 8000;
+  const particleGeometry = new THREE.BufferGeometry();
+  const positions = [];
 
-  // for (let i = 0; i < particleCount; i++) {
-  //   positions.push(
-  //     (Math.random() - 0.5) * 20,
-  //     (Math.random() - 0.5) * 20,
-  //     (Math.random() - 0.5) * 20
-  //   );
-  // }
+  for (let i = 0; i < particleCount; i++) {
+    positions.push(
+      (Math.random() - 0.5) * 20,
+      (Math.random() - 0.5) * 20,
+      (Math.random() - 0.5) * 20
+    );
+  }
 
-  // particleGeometry.setAttribute(
-  //   'position',
-  //   new THREE.Float32BufferAttribute(positions, 3)
-  // );
+  particleGeometry.setAttribute(
+    'position',
+    new THREE.Float32BufferAttribute(positions, 3)
+  );
 
-  // const particleMaterial = new THREE.PointsMaterial({
-  //   color: 0xffffff,
-  //   size: 0.05,
-  //   transparent: true,
-  //   opacity: 0.5,
-  //   depthWrite: false,
-  // });
+  const particleMaterial = new THREE.PointsMaterial({
+    color: 0xffffff,
+    size: 0.02,
+    transparent: true,
+    opacity: 0.5,
+    depthWrite: false,
+  });
 
-  // particles = new THREE.Points(particleGeometry, particleMaterial);
-  // scene.add(particles);
+  particles = new THREE.Points(particleGeometry, particleMaterial);
+  scene.add(particles);
 
   // Load 3D Model
   const dracoLoader = new DRACOLoader();
@@ -77,7 +77,7 @@ onMounted(() => {
 
   const loader = new GLTFLoader();
   loader.setDRACOLoader(dracoLoader);
-
+  let rightHandBone=null;
   loader.load(
     '/model.glb',
     (gltf) => {
@@ -89,8 +89,14 @@ onMounted(() => {
         if (child.isMesh) {
           child.geometry.computeBoundingBox();
         }
+         // Use this to identify correct bone
+        if (child.name === 'handR') {
+          
+          rightHandBone = child;
+        }
+      
       });
-
+      
       const bbox = new THREE.Box3().setFromObject(model);
       const center = bbox.getCenter(new THREE.Vector3());
       model.position.sub(center);
@@ -131,8 +137,14 @@ onMounted(() => {
         camera.position.x = Math.sin(angle) * 1.5;
         camera.position.z = 2.5 + Math.cos(angle) * 0.5;
         camera.lookAt(0, 0, 0);
+        if (rightHandBone) {
+          console.log("animation")
+        rightHandBone.rotation.x = progress * Math.PI * 0.5;
+        rightHandBone.rotation.z = Math.sin(progress * Math.PI) * 0.2;
+      }
       },
     });
+   
   };
 
   // Handle window resize
