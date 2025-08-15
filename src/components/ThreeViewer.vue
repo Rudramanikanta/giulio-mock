@@ -13,7 +13,8 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 gsap.registerPlugin(ScrollTrigger);
 
 const container = ref(null);
-
+let Clock = new THREE.Clock();
+let mixer=null;
 onMounted(() => {
   let scene, camera, renderer, model, particles;
 
@@ -46,6 +47,7 @@ onMounted(() => {
   const particleCount = 8000;
   const particleGeometry = new THREE.BufferGeometry();
   const positions = [];
+//animation
 
   for (let i = 0; i < particleCount; i++) {
     positions.push(
@@ -83,7 +85,10 @@ onMounted(() => {
     (gltf) => {
       model = gltf.scene;
       model.scale.set(1, 1, 1);
-
+      mixer=new THREE.AnimationMixer(model);
+      const action=mixer.clipAction(gltf.animations[0]);
+      action.play();
+      console.log(gltf.animations)
       // Center the model using bounding box
       model.traverse((child) => {
         if (child.isMesh) {
@@ -100,7 +105,20 @@ onMounted(() => {
       const bbox = new THREE.Box3().setFromObject(model);
       const center = bbox.getCenter(new THREE.Vector3());
       model.position.sub(center);
+      action.paused = true
 
+    // ScrollTrigger controls animation time
+    gsap.to(action, {
+      time: action.getClip().duration,
+      ease: 'none',
+      scrollTrigger: {
+        trigger: '.scroll-container',
+        start: 'top top',
+        end: '+=3000',
+        scrub: true,
+        markers: false // set to true to debug
+      }
+    })
       scene.add(model);
       setupScrollAnimation();
       animate();
@@ -114,7 +132,7 @@ onMounted(() => {
   // Animate loop
   const animate = () => {
     requestAnimationFrame(animate);
-
+    if(mixer) mixer.update(Clock.getDelta());
     // Animate particles
     if (particles) {
       particles.rotation.y += 0.0005;

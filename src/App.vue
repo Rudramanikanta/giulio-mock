@@ -1,18 +1,26 @@
 <template>
   <div>
     <ThreeViewer />
-
+   
     <!-- Scrollable content that drives ScrollTrigger -->
      <div id="scroll-content">
       <section class="spacer">
         <div ref="heroText" class="text-block">
-          <h1>Scroll Down</h1>
-          <p>The camera should rotate as you scroll.</p>
-        </div>
+           <h1>Scroll to see</h1>
+         </div>
       </section>
 
       <section class="spacer">
-        <p>More scroll to continue animation.</p>
+        
+      </section>
+      <section class="spacer">
+        <div ref="heroText" class="text-block">
+          </div>
+      </section>
+
+      <section class="spacer">
+        <div ref="heroText" class="text-block">
+          </div>
       </section>
       
     </div>
